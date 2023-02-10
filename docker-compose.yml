@@ -25,7 +25,7 @@ services:
             - '--web.enable-lifecycle'
         ports:
             - "9090:9090"
-        restart: on-failure
+        restart: always
         networks:
           - prometheus_net
 #    node-exporter:
@@ -36,7 +36,7 @@ services:
       image: gcr.io/cadvisor/cadvisor-arm64:v0.47.0
       container_name: cadvisor
       privileged: true
-      restart: on-failure
+      restart: always
       volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:rw
@@ -62,7 +62,7 @@ services:
             - prometheus
         ports:
             - "3000:3000"
-        restart: on-failure
+        restart: always
         networks:
           - prometheus_net
     alertmanager:
@@ -72,7 +72,7 @@ services:
             - '--config.file=/alertmanager.yml'
         ports:
             - "9093:9093"
-        restart: on-failure
+        restart: always
         networks:
           - prometheus_net
 volumes:
