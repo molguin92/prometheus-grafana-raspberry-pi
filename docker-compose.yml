@@ -1,13 +1,22 @@
 # docker-compose.yml
 version: '3'
+networks:
+  prometheus_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.16.16.0/24"
 services:
     prometheus:
+        image: prom/prometheus
         container_name: prometheus
         # If running on a 32-bit Raspberry Pi, use:
         # image: prom/prometheus:v1.7.2
-        build: ./prometheus
+        # build: ./prometheus
         volumes:
             - prometheus_data:/prometheus
+            - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+            - ./prometheus/alert.rules:/etc/prometheus/alert.rules 
         command:
             - '--config.file=/etc/prometheus/prometheus.yml'
             - '--web.console.libraries=/etc/prometheus/console_libraries'
@@ -17,12 +26,27 @@ services:
         ports:
             - "9090:9090"
         restart: on-failure
-    node-exporter:
-        container_name: node-exporter
-        image: prom/node-exporter-linux-armv7
-        ports:
-            - "9100:9100"
-        restart: on-failure
+        networks:
+          - prometheus_net
+#    node-exporter:
+#        container_name: node-exporter
+#        image: prom/node-exporter-linux-armv7
+#        restart: on-failure
+    cadvisor:
+      image: gcr.io/cadvisor/cadvisor-arm64:v0.47.0
+      container_name: cadvisor
+      privileged: true
+      restart: on-failure
+      volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      devices:
+      - /dev/kmsg
+        # ports: ["9091:8080"]
+      networks:
+        - prometheus_net
     grafana:
         container_name: grafana
         image: grafana/grafana:latest
@@ -39,6 +63,8 @@ services:
         ports:
             - "3000:3000"
         restart: on-failure
+        networks:
+          - prometheus_net
     alertmanager:
         container_name: alertmanager
         build: ./alertmanager
@@ -47,6 +73,8 @@ services:
         ports:
             - "9093:9093"
         restart: on-failure
+        networks:
+          - prometheus_net
 volumes:
     prometheus_data: {}
     grafana_data: {}
